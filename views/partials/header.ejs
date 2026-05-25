@@ -5,6 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><%= title %> · Mini Task Manager</title>
   <link rel="stylesheet" href="/styles.css" />
+  <script>
+  (function(apiKey){
+      (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
+      v=['initialize','identify','updateOptions','pageLoad','track', 'trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
+      o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
+      y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo-dev.pendo-dev.com/agent/static/'+apiKey+'/pendo.js';
+      z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
+  })('b91b9220-aafc-481e-871c-892255c58c27');
+  </script>
+  <script>
+  <% if (currentUser) { %>
+  pendo.initialize({
+    visitor: {
+      id: '<%= currentUser.id %>',
+      email: '<%= currentUser.email %>',
+      createdAt: '<%= currentUser.created_at %>'
+    }
+  });
+  <% } else { %>
+  pendo.initialize({
+    visitor: {
+      id: ''
+    }
+  });
+  <% } %>
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -12,7 +38,7 @@
     <nav>
       <% if (currentUser) { %>
         <span class="user-email" id="current-user-email"><%= currentUser.email %></span>
-        <form method="POST" action="/logout" class="inline">
+        <form method="POST" action="/logout" class="inline" onsubmit="if(window.pendo)pendo.clearSession();">
           <button id="btn-logout" data-action="logout" type="submit" class="link-btn">Log out</button>
         </form>
       <% } else { %>

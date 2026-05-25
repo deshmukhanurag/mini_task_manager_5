@@ -33,7 +33,7 @@ app.use(session({
 
 app.use((req, res, next) => {
   if (req.session && req.session.userId) {
-    const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.session.userId);
+    const user = db.prepare('SELECT id, email, created_at FROM users WHERE id = ?').get(req.session.userId);
     res.locals.currentUser = user || null;
   } else {
     res.locals.currentUser = null;
