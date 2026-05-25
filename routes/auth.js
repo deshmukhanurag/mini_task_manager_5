@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const db = require('../db');
+const pendo = require('../pendo');
 
 const router = express.Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,6 +30,10 @@ router.post('/signup', (req, res) => {
   const hash = bcrypt.hashSync(password, 12);
   const info = db.prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)').run(email, hash);
   req.session.userId = info.lastInsertRowid;
+  pendo.track('user_signed_up', info.lastInsertRowid, {
+    email_domain: email.split('@')[1] || '',
+    user_id: String(info.lastInsertRowid),
+  });
   req.session.flash = { type: 'success', message: 'Welcome! Your account is ready.' };
   res.redirect('/tasks');
 });
@@ -49,10 +54,18 @@ router.post('/login', (req, res) => {
   }
 
   req.session.userId = user.id;
+  pendo.track('user_logged_in', user.id, {
+    user_id: String(user.id),
+    email_domain: email.split('@')[1] || '',
+  });
   res.redirect('/tasks');
 });
 
 router.post('/logout', (req, res) => {
+  const userId = req.session.userId;
+  pendo.track('user_logged_out', userId, {
+    user_id: String(userId),
+  });
   req.session.destroy(() => res.redirect('/login'));
 });
 

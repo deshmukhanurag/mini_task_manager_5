@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const pendo = require('../pendo');
 
 const router = express.Router();
 const PRIORITIES = ['low', 'medium', 'high'];
@@ -68,11 +69,17 @@ router.post('/', (req, res) => {
     });
   }
 
-  db.prepare(`
+  const info = db.prepare(`
     INSERT INTO tasks (user_id, title, description, priority, due_date)
     VALUES (?, ?, ?, ?, ?)
   `).run(userId, title, description, priority, due_date);
 
+  pendo.track('task_created', userId, {
+    task_id: String(info.lastInsertRowid),
+    priority: priority,
+    has_description: Boolean(description),
+    has_due_date: Boolean(due_date),
+  });
   req.session.flash = { type: 'success', message: 'Task created.' };
   res.redirect('/tasks');
 });
@@ -107,6 +114,18 @@ router.post('/:id', (req, res) => {
     WHERE id = ? AND user_id = ?
   `).run(title, description, priority, due_date, task.id, userId);
 
+  const fieldsChanged = [];
+  if (task.title !== title) fieldsChanged.push('title');
+  if ((task.description || '') !== (description || '')) fieldsChanged.push('description');
+  if (task.priority !== priority) fieldsChanged.push('priority');
+  if ((task.due_date || '') !== (due_date || '')) fieldsChanged.push('due_date');
+  pendo.track('task_updated', userId, {
+    task_id: String(task.id),
+    priority: priority,
+    has_description: Boolean(description),
+    has_due_date: Boolean(due_date),
+    fields_changed: fieldsChanged.join(','),
+  });
   req.session.flash = { type: 'success', message: 'Task updated.' };
   res.redirect('/tasks');
 });
@@ -115,14 +134,35 @@ router.post('/:id/toggle', (req, res) => {
   const userId = req.session.userId;
   const task = getOwnedTask(req.params.id, userId);
   if (!task) return res.redirect('/tasks');
+  const newCompleted = task.completed ? 0 : 1;
   db.prepare('UPDATE tasks SET completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-    .run(task.completed ? 0 : 1, task.id, userId);
+    .run(newCompleted, task.id, userId);
+  const taskAgeDays = Math.floor((Date.now() - new Date(task.created_at).getTime()) / 86400000);
+  pendo.track('task_completed', userId, {
+    task_id: String(task.id),
+    new_status: newCompleted ? 'completed' : 'active',
+    priority: task.priority,
+    had_due_date: Boolean(task.due_date),
+    task_age_days: taskAgeDays,
+  });
   res.redirect(req.get('Referrer') || '/tasks');
 });
 
 router.post('/:id/delete', (req, res) => {
   const userId = req.session.userId;
-  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, userId);
+  const task = getOwnedTask(req.params.id, userId);
+  if (task) {
+    const taskAgeDays = Math.floor((Date.now() - new Date(task.created_at).getTime()) / 86400000);
+    db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, userId);
+    pendo.track('task_deleted', userId, {
+      task_id: String(task.id),
+      priority: task.priority,
+      was_completed: Boolean(task.completed),
+      task_age_days: taskAgeDays,
+    });
+  } else {
+    db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, userId);
+  }
   req.session.flash = { type: 'success', message: 'Task deleted.' };
   res.redirect('/tasks');
 });
