@@ -1,0 +1,69 @@
+<%- include('../partials/header') %>
+  <section class="card" id="page-tasks">
+    <h1>My tasks</h1>
+
+    <% if (error) { %><p class="error" id="task-form-error"><%= error %></p><% } %>
+
+    <form method="POST" action="/tasks" class="task-form" id="form-new-task">
+      <input type="text" name="title" id="input-task-title" placeholder="What needs doing?" value="<%= form.title %>" required />
+      <input type="text" name="description" id="input-task-description" placeholder="Description (optional)" value="<%= form.description %>" />
+      <select name="priority" id="select-task-priority">
+        <% ['low','medium','high'].forEach(p => { %>
+          <option value="<%= p %>" <%= form.priority === p ? 'selected' : '' %>><%= p %></option>
+        <% }) %>
+      </select>
+      <input type="date" name="due_date" id="input-task-due" value="<%= form.due_date %>" />
+      <button type="submit" id="btn-create-task" data-action="create-task" class="primary">Add task</button>
+    </form>
+
+    <div class="filters" id="task-filters">
+      <% const filters = [
+        { key: 'all', label: 'All', count: counts.total || 0 },
+        { key: 'active', label: 'Active', count: counts.active || 0 },
+        { key: 'completed', label: 'Completed', count: counts.completed || 0 },
+        { key: 'high', label: 'High priority', count: counts.high || 0 },
+      ]; %>
+      <% filters.forEach(f => { %>
+        <a href="/tasks?filter=<%= f.key %>"
+           id="filter-<%= f.key %>"
+           data-action="filter-<%= f.key %>"
+           class="chip <%= filter === f.key ? 'chip-active' : '' %>">
+          <%= f.label %> <span class="count"><%= f.count %></span>
+        </a>
+      <% }) %>
+    </div>
+
+    <ul class="task-list" id="task-list">
+      <% if (tasks.length === 0) { %>
+        <li class="empty" id="empty-state">No tasks here yet.</li>
+      <% } %>
+      <% tasks.forEach(t => { %>
+        <li class="task-row priority-<%= t.priority %> <%= t.completed ? 'is-completed' : '' %>" data-task-id="<%= t.id %>">
+          <form method="POST" action="/tasks/<%= t.id %>/toggle?filter=<%= filter %>" class="inline">
+            <button type="submit"
+                    id="btn-toggle-<%= t.id %>"
+                    data-action="toggle-task"
+                    class="toggle"
+                    aria-label="Toggle completion">
+              <%= t.completed ? '☑' : '☐' %>
+            </button>
+          </form>
+          <div class="task-body">
+            <div class="task-title"><%= t.title %></div>
+            <% if (t.description) { %><div class="task-desc"><%= t.description %></div><% } %>
+            <div class="task-meta">
+              <span class="badge badge-<%= t.priority %>"><%= t.priority %></span>
+              <% if (t.due_date) { %><span class="due">due <%= t.due_date %></span><% } %>
+            </div>
+          </div>
+          <div class="task-actions">
+            <a href="/tasks/<%= t.id %>/edit" id="btn-edit-<%= t.id %>" data-action="edit-task" class="link-btn">Edit</a>
+            <form method="POST" action="/tasks/<%= t.id %>/delete" class="inline" onsubmit="return confirm('Delete this task?');">
+              <button type="submit" id="btn-delete-<%= t.id %>" data-action="delete-task" class="link-btn danger">Delete</button>
+            </form>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  </section>
+<%- include('../partials/footer') %>

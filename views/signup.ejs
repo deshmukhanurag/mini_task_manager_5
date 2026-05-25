@@ -1,0 +1,17 @@
+<%- include('partials/header') %>
+  <section class="card auth-card" id="page-signup">
+    <h1>Create your account</h1>
+    <% if (error) { %><p class="error" id="signup-error"><%= error %></p><% } %>
+    <form method="POST" action="/signup" class="stacked">
+      <label>Email
+        <input type="email" name="email" id="input-email" value="<%= email %>" required autofocus />
+      </label>
+      <label>Password
+        <input type="password" name="password" id="input-password" minlength="8" required />
+        <small>At least 8 characters.</small>
+      </label>
+      <button type="submit" id="btn-submit-signup" data-action="submit-signup" class="primary">Sign up</button>
+    </form>
+    <p class="muted">Already have an account? <a href="/login" id="link-go-login">Log in</a></p>
+  </section>
+<%- include('partials/footer') %>

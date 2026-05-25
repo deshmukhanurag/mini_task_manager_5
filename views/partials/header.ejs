@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> · Mini Task Manager</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand" id="link-brand">Mini Task Manager</a>
+    <nav>
+      <% if (currentUser) { %>
+        <span class="user-email" id="current-user-email"><%= currentUser.email %></span>
+        <form method="POST" action="/logout" class="inline">
+          <button id="btn-logout" data-action="logout" type="submit" class="link-btn">Log out</button>
+        </form>
+      <% } else { %>
+        <a id="link-login" href="/login">Log in</a>
+        <a id="link-signup" href="/signup">Sign up</a>
+      <% } %>
+    </nav>
+  </header>
+  <main class="container">
+    <% if (flash) { %>
+      <div class="flash flash-<%= flash.type %>" id="flash-message"><%= flash.message %></div>
+    <% } %>

@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+  <section class="card auth-card" id="page-login">
+    <h1>Log in</h1>
+    <% if (error) { %><p class="error" id="login-error"><%= error %></p><% } %>
+    <form method="POST" action="/login" class="stacked">
+      <label>Email
+        <input type="email" name="email" id="input-email" value="<%= email %>" required autofocus />
+      </label>
+      <label>Password
+        <input type="password" name="password" id="input-password" required />
+      </label>
+      <button type="submit" id="btn-submit-login" data-action="submit-login" class="primary">Log in</button>
+    </form>
+    <p class="muted">No account yet? <a href="/signup" id="link-go-signup">Sign up</a></p>
+  </section>
+<%- include('partials/footer') %>
