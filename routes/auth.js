@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const db = require('../db');
+const { trackEvent } = require('../lib/pendo');
 
 const router = express.Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,6 +31,16 @@ router.post('/signup', (req, res) => {
   const info = db.prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)').run(email, hash);
   req.session.userId = info.lastInsertRowid;
   req.session.flash = { type: 'success', message: 'Welcome! Your account is ready.' };
+  // Track Event: a new account was saved and its session started.
+  trackEvent('account_created', {
+    visitorId: info.lastInsertRowid,
+    req,
+    properties: {
+      user_id: Number(info.lastInsertRowid),
+      signup_method: 'email_password',
+      email_domain: email.split('@')[1],
+    },
+  });
   res.redirect('/tasks');
 });
 
@@ -49,6 +60,15 @@ router.post('/login', (req, res) => {
   }
 
   req.session.userId = user.id;
+  // Track Event: credentials were verified and the session started.
+  trackEvent('user_logged_in', {
+    visitorId: user.id,
+    req,
+    properties: {
+      user_id: user.id,
+      login_method: 'email_password',
+    },
+  });
   res.redirect('/tasks');
 });
 
